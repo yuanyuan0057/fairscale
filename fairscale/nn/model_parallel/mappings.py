@@ -34,6 +34,7 @@ def _reduce(input_: torch.Tensor) -> torch.Tensor:
         return input_
 
     # All-reduce.
+    print(f"doing all_reduce on {torch.distributed.get_rank()}")
     torch.distributed.all_reduce(input_, group=group)
 
     return input_
@@ -74,6 +75,7 @@ def _gather(input_: torch.Tensor) -> torch.Tensor:
 
     tensor_list = [torch.empty_like(input_) for _ in range(world_size)]
     tensor_list[rank] = input_
+    print(f"doing all_gather on {torch.distributed.get_rank()}")
     torch.distributed.all_gather(tensor_list, input_, group=group)
 
     # Note: torch.cat already creates a contiguous tensor.
@@ -91,6 +93,9 @@ class _CopyToModelParallelRegion(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):  # type: ignore
+        print(f"_CopyToModelParallelRegion back yay")
+        import traceback
+        traceback.print_stack()
         return _reduce(grad_output)
 
 
@@ -127,6 +132,9 @@ class _GatherFromModelParallelRegion(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx, grad_output):  # type: ignore
+        print(f"_GatherFromModelParallelRegion back yay")
+        import traceback
+        traceback.print_stack()
         return _split(grad_output)
 
 

@@ -33,6 +33,8 @@ from .skip.layout import inspect_skip_layout
 from .skip.skippable import verify_skippables
 from .stream import AbstractStream, new_stream
 
+from fairscale.nn.model_parallel import get_pipeline_parallel_group
+
 __all__ = ["Pipe"]
 
 
@@ -132,10 +134,10 @@ def split_module(
     if any(x <= 0 for x in balance):
         raise BalanceError(f"all balance numbers must be positive integer (balance: {balance})")
 
-    if len(balance) > len(devices):
-        raise IndexError(
-            "too few devices to hold given partitions " f"(devices: {len(devices)}, partitions: {len(balance)})"
-        )
+    #if len(balance) > len(devices):
+    #    raise IndexError(
+    #        "too few devices to hold given partitions " f"(devices: {len(devices)}, partitions: {len(balance)})"
+    #    )
 
     j = 0
     partitions = []
@@ -145,20 +147,25 @@ def split_module(
         layers[name] = layer
 
         if len(layers) == balance[j]:
-            # Group buffered layers as a partition.
-            partition = nn.Sequential(layers)
+            if j == torch.distributed.get_rank(get_pipeline_parallel_group()):
+                # Group buffered layers as a partition.
+                partition = nn.Sequential(layers)
 
-            device = devices[j]
-            partition.to(device)
+                #device = devices[j]
+                device = torch.distributed.get_rank() # TODO(tom) this should be local rank per host
+                partition.to(device)
 
-            partitions.append(partition)
+                partitions.append(partition)
 
-            # Prepare for the next partition.
+                # Prepare for the next partition.
+                print(f"valid j={j} for {torch.distributed.get_rank(get_pipeline_parallel_group())}")
+            else:
+                print(f"skip j={j} for {torch.distributed.get_rank(get_pipeline_parallel_group())}")
             layers.clear()
             j += 1
 
     partitions = cast(List[nn.Sequential], nn.ModuleList(partitions))
-    del devices[j:]
+    #del devices[j:]
 
     return partitions, balance, devices
 
@@ -277,10 +284,10 @@ class Pipe(Module):
         if deferred_batch_norm:
             module = DeferredBatchNorm.convert_deferred_batch_norm(module, chunks)
 
-        if devices is None:
-            devices = range(torch.cuda.device_count())
-        devices = [torch.device(d) for d in devices]
-        devices = cast(List[torch.device], devices)
+        #if devices is None:
+        #    devices = range(torch.cuda.device_count())
+        #devices = [torch.device(d) for d in devices]
+        #devices = cast(List[torch.device], devices)
 
         try:
             self.partitions, self.balance, self.devices = split_module(module, balance, devices)
@@ -293,7 +300,7 @@ class Pipe(Module):
         self._skip_layout = inspect_skip_layout(self.partitions)
 
         # Separate CUDA streams for copy.
-        copy_streams = self._ensure_copy_streams()
+        copy_streams = None # self._ensure_copy_streams()
 
         # The micro-batch index where the checkpointing stops.
         checkpoint_stop = {"always": self.chunks, "except_last": self.chunks - 1, "never": 0}[self.checkpoint]
@@ -405,3 +412,7 @@ class Pipe(Module):
         # Merge the micro-batches into one mini-batch.
         output = microbatch.gather(batches)
         return output
+
+
+    def back_helper(self, output):
+        self.pipeline.back_helper(reversed(microbatch.scatter(output, self.chunks)))

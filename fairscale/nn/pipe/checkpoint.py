@@ -122,6 +122,7 @@ class Checkpointing:
         """Applies :class:`Recompute` to the batch in place."""
         input_atomic = self.batch.atomic
         input = tuple(self.batch)
+        print(f"{torch.distributed.get_rank()}: running recompute checkpoint")
 
         # batch[0] is always requiring grad, because it has been passed
         # checkpoint with a phony requiring grad.

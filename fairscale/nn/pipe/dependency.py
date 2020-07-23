@@ -46,6 +46,7 @@ class Fork(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx: "Fork", grad_input: Tensor, grad_grad: Tensor) -> Tensor:  # type: ignore
+        print(f"{torch.distributed.get_rank()}: running forkBackward")
         return grad_input
 
 
@@ -64,4 +65,5 @@ class Join(torch.autograd.Function):
 
     @staticmethod
     def backward(ctx: "Join", grad_input: Tensor) -> Tuple[Tensor, None]:  # type: ignore
+        print(f"{torch.distributed.get_rank()}: running joinBackward")
         return grad_input, None

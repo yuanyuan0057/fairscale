@@ -273,6 +273,7 @@ class ColumnParallelLinear(torch.nn.Module):
         # Set up backprop all-reduce.
         input_parallel = copy_to_model_parallel_region(input_)
         # Matrix multiply.
+        print(f"ColumnParallelLinear:\n{self.weight.data}\n*\n{input_parallel}")
         output_parallel = F.linear(input_parallel, self.weight, self.bias)
         if self.gather_output:
             # All-gather across the partitions.
@@ -360,6 +361,7 @@ class RowParallelLinear(torch.nn.Module):
         else:
             input_parallel = scatter_to_model_parallel_region(input_)
         # Matrix multiply.
+        print(f"RowParallelLinear:\n{self.weight.data}\n*\n{input_parallel}")
         output_parallel = F.linear(input_parallel, self.weight)
         # All-reduce across all the partitions.
         output_ = reduce_from_model_parallel_region(output_parallel)
