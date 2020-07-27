@@ -411,7 +411,7 @@ class Pipeline:
             import traceback
             print(f"back_helper-{rank} got exception {e}, {traceback.format_exc()}")
 
-        if False: # Enable to trigger crash
+        if True: # Enable to trigger crash
             import os
             import time
             for i in range(10):
