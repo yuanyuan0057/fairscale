@@ -20,7 +20,7 @@ from typing import Any, List
 #
 from recommonmark.transform import AutoStructify
 
-sys.path.insert(0, os.path.abspath("../.."))
+sys.path.insert(0, os.path.abspath("../../"))
 
 # -- Project information -----------------------------------------------------
 
@@ -37,7 +37,11 @@ release = "0.0.2"
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosectionlabel"]
+extensions = [
+    "sphinx.ext.autodoc", 
+    "sphinx.ext.autosummary", 
+    "sphinx.ext.autosectionlabel"]
+autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -50,7 +54,6 @@ exclude_patterns: List[Any] = []
 
 # -- Options for HTML output -------------------------------------------------
 
-
 html_theme = "pytorch_sphinx_theme"
 templates_path = ["_templates"]
 
@@ -60,7 +63,7 @@ templates_path = ["_templates"]
 # documentation.
 #
 html_theme_options = {
-    "includehidden": False,
+    "includehidden": True,
     "canonical_url": "https://fairscale.readthedocs.io",
     "pytorch_project": "docs",
 }
