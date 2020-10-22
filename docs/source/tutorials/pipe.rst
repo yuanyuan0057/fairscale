@@ -77,4 +77,4 @@ Finally, to run the model and compute the loss function, make sure that outputs 
 
 
 
-run the example `here <../../../../examples/tutorial_pipe.py>`_. 
+run the example `here <https://github.com/facebookresearch/fairscale/blob/master/examples/tutorial_pipe.py>`_. 
