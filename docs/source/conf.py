@@ -40,7 +40,8 @@ release = "0.0.2"
 extensions = [
     "sphinx.ext.autodoc", 
     "sphinx.ext.autosummary", 
-    "sphinx.ext.autosectionlabel"]
+    "sphinx.ext.autosectionlabel",
+    "sphinx.ext.napoleon"]
 autosummary_generate = True  # Turn on sphinx.ext.autosummary
 
 # Add any paths that contain templates here, relative to this directory.
