@@ -41,7 +41,7 @@ class OSS(Optimizer):
     the new version of the parameters to all other ranks to synchronize
     the parameters for next round forward/backward computation.
 
-    Args:
+    Arguments:
         params (list of tensors):
             parameters to be optimized
     Keyword Args:
@@ -52,11 +52,6 @@ class OSS(Optimizer):
         broadcast_buffer_size (int):
             the size of the buffer used to batch the small parameter tensors (default 128k).
     """
-
-    #: The optimizer used for a given shard
-    optim: Optimizer
-
-    in_super_constructor: bool
 
     def __init__(
         self,
@@ -76,7 +71,7 @@ class OSS(Optimizer):
             torch.device, List[List[Parameter]]
         ] = OrderedDict()  # device, rank, params
         self._param_rank: Dict[torch.Tensor, int] = {}
-        self._partition_parameters: List[List[dict]] = []
+        self._partition_parameters: List[List[Dict]] = []
 
         # Build the wrapped optimizer, responsible for a shard of the params
         self.group = group if group is not None else dist.group.WORLD
@@ -106,13 +101,14 @@ class OSS(Optimizer):
             ]
 
     # Partition helpers
-    def partition_parameters(self) -> List[List[dict]]:
+    def partition_parameters(self) -> List[List[Dict]]:
         """Partitions parameters across distributed data parallel ranks.
 
-        Returns a list of param_groups (which is a list of dict) where each
-        element of the list contains the param_groups for a rank. Element 0
-        corresponds to rank 0, etc. We need all the ranks for the broadcast
-        inside step().
+        Returns:
+            a list of param_groups (which is a list of dict) where each
+            element of the list contains the param_groups for a rank. Element 0
+            corresponds to rank 0, etc. We need all the ranks for the broadcast
+            inside step().
         """
         if len(self._partition_parameters) == 0:
             self._partition_parameters = [list() for _ in range(self.world_size)]
@@ -201,7 +197,7 @@ class OSS(Optimizer):
 
         return loss
 
-    def local_state_dict(self) -> dict:
+    def local_state_dict(self) -> Dict:
         """Gets this rank's state_dict.
 
         Returns:
@@ -232,7 +228,10 @@ class OSS(Optimizer):
             self._broadcast_state_dict()
 
     def state_dict(self) -> Dict[str, Any]:
-        """Return the last known global optimizer state, which consist of a list of the shards.
+        """ Get the last known optimizer global state
+
+        Returns:
+             a dict which holds the partioned global state.
 
         .. warning:
             If the state has not been consolidated, this returns a shard's worth, not the global state.
@@ -267,7 +266,7 @@ class OSS(Optimizer):
             "local_state_dict": False,
         }
 
-    def load_local_state_dict(self, state_dict: dict) -> None:
+    def load_local_state_dict(self, state_dict: Dict) -> None:
         """Loads this rank's state_dict.
 
         .. warning: This is not meant to load the global state dict.
@@ -313,7 +312,7 @@ class OSS(Optimizer):
             # Dispatch this rank's state dictionary to the wrapped shard optimizer
             self.load_local_state_dict({"state": state_dict["state"][self.rank], "param_groups": param_groups})
 
-    def add_param_group(self, param_group: dict) -> None:
+    def add_param_group(self, param_group: Dict) -> None:
         """Add a param group to the :class:`Optimizer` s `param_groups`.
 
         This can be useful when fine tuning a pre-trained network as frozen layers can be made
@@ -411,11 +410,7 @@ class OSS(Optimizer):
 
     @staticmethod
     def get_global_rank(group: Any, rank: int) -> int:
-        if group is dist.group.WORLD:
-            return rank
-        else:
-            global_rank = dist.distributed_c10d._get_global_rank(group, rank)  # type: ignore
-        return global_rank
+        return rank if group is dist.group.WORLD else dist.distributed_c10d._get_global_rank(group, rank)  # type: ignore
 
     def _broadcast_params(self, buffers: List[torch.Tensor], per_rank_params: List[List[Parameter]]) -> None:
         """Helper function to broadcast all the parameters from a given device"""
